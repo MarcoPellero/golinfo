@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 )
 
 func main() {
-	token, err := Login(os.Args[1], os.Args[2])
+	data, err := GetTaskStats("ois_text2")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(token)
+	fmt.Println(data)
 }
