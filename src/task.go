@@ -17,12 +17,12 @@ type apiLeaderboardElement struct {
 }
 
 type apiTaskStatsResponse struct {
-	TotalSubmissions int                  `json:"nsubs"`
-	GoodSubmissions  int                  `json:"nsubscorrect"`
-	Success          int                  `json:"success"`
-	TotalUsers       int                  `json:"nusers"`
-	GoodUsers        int                  `json:"nuserscorrect"`
-	Leaderboard      []leaderboardElement `json:"best"`
+	TotalSubmissions int                     `json:"nsubs"`
+	GoodSubmissions  int                     `json:"nsubscorrect"`
+	Success          int                     `json:"success"`
+	TotalUsers       int                     `json:"nusers"`
+	GoodUsers        int                     `json:"nuserscorrect"`
+	Leaderboard      []apiLeaderboardElement `json:"best"`
 	// technically it has an "error" field but 1. it's optional (doesn't appear on success) and 2. is very generic ("error: not found")
 }
 
@@ -32,13 +32,13 @@ type apiSubmissionFile struct {
 }
 
 type apiBasicSubmissionInfo struct {
-	Id                 int            `json:"id"`
-	TaskId             int            `json:"task_id"`
-	Timestamp          float64        `json:"timestamp"`
-	CompilationOutcome string         `json:"compilation_outcome"`
-	EvaluationOutcome  string         `json:"evaluation_outcome"`
-	Score              float32        `json:"score"`
-	Files              []apiFileShape `json:"files"`
+	Id                 int                 `json:"id"`
+	TaskId             int                 `json:"task_id"`
+	Timestamp          float64             `json:"timestamp"`
+	CompilationOutcome string              `json:"compilation_outcome"`
+	EvaluationOutcome  string              `json:"evaluation_outcome"`
+	Score              float32             `json:"score"`
+	Files              []apiSubmissionFile `json:"files"`
 }
 
 type TaskStats struct {
@@ -48,7 +48,7 @@ type TaskStats struct {
 	TotalUsers       int
 	GoodUsers        int
 	BadUsers         int
-	Leaderboard      []leaderboardElement
+	Leaderboard      []apiLeaderboardElement
 }
 
 type BasicSubmissionInfo struct {
