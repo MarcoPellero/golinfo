@@ -10,10 +10,35 @@ import (
 	"time"
 )
 
-type leaderboardElement struct {
+type apiLeaderboardElement struct {
 	// the JSON definitions are so that i don't have to redefine the same struct in GetTaskStats()
 	Username    string  `json:"username"`
 	TimeSeconds float32 `json:"time"`
+}
+
+type apiTaskStatsResponse struct {
+	TotalSubmissions int                  `json:"nsubs"`
+	GoodSubmissions  int                  `json:"nsubscorrect"`
+	Success          int                  `json:"success"`
+	TotalUsers       int                  `json:"nusers"`
+	GoodUsers        int                  `json:"nuserscorrect"`
+	Leaderboard      []leaderboardElement `json:"best"`
+	// technically it has an "error" field but 1. it's optional (doesn't appear on success) and 2. is very generic ("error: not found")
+}
+
+type apiSubmissionFile struct {
+	Name       string `json:"name"`
+	HashDigest string `json:"digest"`
+}
+
+type apiBasicSubmissionInfo struct {
+	Id                 int            `json:"id"`
+	TaskId             int            `json:"task_id"`
+	Timestamp          float64        `json:"timestamp"`
+	CompilationOutcome string         `json:"compilation_outcome"`
+	EvaluationOutcome  string         `json:"evaluation_outcome"`
+	Score              float32        `json:"score"`
+	Files              []apiFileShape `json:"files"`
 }
 
 type TaskStats struct {
@@ -26,7 +51,7 @@ type TaskStats struct {
 	Leaderboard      []leaderboardElement
 }
 
-type Submission struct {
+type BasicSubmissionInfo struct {
 	SubmissionId       int
 	TaskId             int
 	SourceCodeId       string
@@ -36,20 +61,13 @@ type Submission struct {
 	Score              int
 }
 
+type SubmissionDetails struct {
+}
+
 func GetTaskStats(taskName string) (TaskStats, error) {
 	type payloadShape struct {
 		TaskName string `json:"name"`
 		Action   string `json:"action"`
-	}
-
-	type responseShape struct {
-		TotalSubmissions int                  `json:"nsubs"`
-		GoodSubmissions  int                  `json:"nsubscorrect"`
-		Success          int                  `json:"success"`
-		TotalUsers       int                  `json:"nusers"`
-		GoodUsers        int                  `json:"nuserscorrect"`
-		Leaderboard      []leaderboardElement `json:"best"`
-		// technically it has an "error" field but 1. it's optional (doesn't appear on success) and 2. is very generic ("error: not found")
 	}
 
 	payloadData := payloadShape{taskName, "stats"}
@@ -68,7 +86,7 @@ func GetTaskStats(taskName string) (TaskStats, error) {
 		return TaskStats{}, fmt.Errorf("GetTaskStats(): The response had status code %d, instead of 200", response.StatusCode)
 	}
 
-	var responseData responseShape
+	var responseData apiTaskStatsResponse
 	err = json.NewDecoder(response.Body).Decode(&responseData)
 	if err != nil {
 		return TaskStats{}, errors.New("GetTaskStats(): Error while decoding the response; maybe it has an unexpected shape")
@@ -91,30 +109,15 @@ func GetTaskStats(taskName string) (TaskStats, error) {
 	return parsedData, nil
 }
 
-func GetTaskSubmissions(taskName string, token AuthToken) ([]Submission, error) {
+func GetTaskSubmissions(taskName string, token AuthToken) ([]BasicSubmissionInfo, error) {
 	type payloadShape struct {
 		TaskName string `json:"task_name"`
 		Action   string `json:"action"`
 	}
 
-	type apiFileShape struct {
-		Name       string `json:"name"`
-		HashDigest string `json:"digest"`
-	}
-
-	type apiSubmissionShape struct {
-		Id                 int            `json:"id"`
-		TaskId             int            `json:"task_id"`
-		Timestamp          float64        `json:"timestamp"`
-		CompilationOutcome string         `json:"compilation_outcome"`
-		EvaluationOutcome  string         `json:"evaluation_outcome"`
-		Score              float32        `json:"score"`
-		Files              []apiFileShape `json:"files"`
-	}
-
 	type responseShape struct {
-		Submissions []apiSubmissionShape `json:"submissions"`
-		Success     int                  `json:"success"`
+		Submissions []apiBasicSubmissionInfo `json:"submissions"`
+		Success     int                      `json:"success"`
 		// technically it has an "error" field but 1. it's optional (doesn't appear on success) and 2. is very generic ("error: not found")
 	}
 
@@ -122,12 +125,12 @@ func GetTaskSubmissions(taskName string, token AuthToken) ([]Submission, error) 
 	payloadBytes, err := json.Marshal(payloadData)
 	if err != nil {
 		// this should be impossible
-		return []Submission{}, errors.New("GetTaskSubmissions(): Error while trying to encode the payload into JSON")
+		return []BasicSubmissionInfo{}, errors.New("GetTaskSubmissions(): Error while trying to encode the payload into JSON")
 	}
 
 	request, err := http.NewRequest(http.MethodPost, apiUrl+"/submission", bytes.NewBuffer(payloadBytes))
 	if err != nil {
-		return []Submission{}, errors.New("GetTaskSubmissions(): Error while crafting the request")
+		return []BasicSubmissionInfo{}, errors.New("GetTaskSubmissions(): Error while crafting the request")
 	}
 
 	request.Header.Add("content-type", "application/json")
@@ -135,25 +138,25 @@ func GetTaskSubmissions(taskName string, token AuthToken) ([]Submission, error) 
 	client := http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
-		return []Submission{}, errors.New("GetTaskSubmissions(): The request caused an error")
+		return []BasicSubmissionInfo{}, errors.New("GetTaskSubmissions(): The request caused an error")
 	}
 
 	if response.StatusCode != 200 {
-		return []Submission{}, fmt.Errorf("GetTaskSubmissions(): The response had status code %d, instead of 200", response.StatusCode)
+		return []BasicSubmissionInfo{}, fmt.Errorf("GetTaskSubmissions(): The response had status code %d, instead of 200", response.StatusCode)
 	}
 
 	var responseData responseShape
 	err = json.NewDecoder(response.Body).Decode(&responseData)
 
 	if err != nil {
-		return []Submission{}, errors.New("GetTaskSubmissions(): Error while decoding the response; maybe it has an unexpected shape")
+		return []BasicSubmissionInfo{}, errors.New("GetTaskSubmissions(): Error while decoding the response; maybe it has an unexpected shape")
 	}
 
 	if responseData.Success != 1 {
-		return []Submission{}, fmt.Errorf("GetTaskSubmissions(): Invalid task name %s", taskName)
+		return []BasicSubmissionInfo{}, fmt.Errorf("GetTaskSubmissions(): Invalid task name %s", taskName)
 	}
 
-	parsedData := make([]Submission, len(responseData.Submissions))
+	parsedData := make([]BasicSubmissionInfo, len(responseData.Submissions))
 	for i, apiSub := range responseData.Submissions {
 		unixSeconds := int64(math.Round(apiSub.Timestamp))
 		tmp := apiSub.Timestamp - float64(unixSeconds)
@@ -162,7 +165,7 @@ func GetTaskSubmissions(taskName string, token AuthToken) ([]Submission, error) 
 		}
 		unixNanoseconds := int64(tmp)
 
-		parsedData[i] = Submission{
+		parsedData[i] = BasicSubmissionInfo{
 			apiSub.Id,
 			apiSub.TaskId,
 			apiSub.Files[0].HashDigest,
