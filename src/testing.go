@@ -2,14 +2,18 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"os"
 )
 
 func main() {
-	data, err := GetTaskStats("ois_text2")
-	if err != nil {
-		log.Fatal(err)
-	}
+	token, err := Login(os.Args[1], os.Args[2])
+	fmt.Println(err)
+	fmt.Println(token)
 
-	fmt.Println(data)
+	data, err := GetTaskSubmissions("ois_intervalxor", token)
+	fmt.Println(err)
+
+	for _, sub := range data {
+		fmt.Println(sub)
+	}
 }
