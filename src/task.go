@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
 	"time"
@@ -26,19 +27,20 @@ type apiTaskStatsResponse struct {
 	// technically it has an "error" field but 1. it's optional (doesn't appear on success) and 2. is very generic ("error: not found")
 }
 
-type apiSubmissionFile struct {
+type ApiFile struct {
+	// used both internally and externally in the same way
 	Name       string `json:"name"`
 	HashDigest string `json:"digest"`
 }
 
 type apiBasicSubmissionInfo struct {
-	Id                 int                 `json:"id"`
-	TaskId             int                 `json:"task_id"`
-	Timestamp          float64             `json:"timestamp"`
-	CompilationOutcome string              `json:"compilation_outcome"`
-	EvaluationOutcome  string              `json:"evaluation_outcome"`
-	Score              float32             `json:"score"`
-	Files              []apiSubmissionFile `json:"files"`
+	Id                 int       `json:"id"`
+	TaskId             int       `json:"task_id"`
+	Timestamp          float64   `json:"timestamp"`
+	CompilationOutcome string    `json:"compilation_outcome"`
+	EvaluationOutcome  string    `json:"evaluation_outcome"`
+	Score              float32   `json:"score"`
+	Files              []ApiFile `json:"files"`
 }
 
 type TaskStats struct {
@@ -54,7 +56,7 @@ type TaskStats struct {
 type BasicSubmissionInfo struct {
 	SubmissionId       int
 	TaskId             int
-	SourceCodeId       string
+	SourceCode         ApiFile
 	Timestamp          time.Time
 	CompilationSuccess bool
 	EvaluationSuccess  bool
@@ -173,7 +175,7 @@ func GetTaskSubmissions(taskName string, token AuthToken) ([]BasicSubmissionInfo
 		parsedData[i] = BasicSubmissionInfo{
 			apiSub.Id,
 			apiSub.TaskId,
-			apiSub.Files[0].HashDigest,
+			apiSub.Files[0],
 			time.Unix(unixSeconds, unixNanoseconds),
 			apiSub.CompilationOutcome == "ok",
 			apiSub.EvaluationOutcome == "ok",
