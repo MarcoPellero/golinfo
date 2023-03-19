@@ -15,9 +15,15 @@ func main() {
 
 	for _, sub := range submissions {
 		fmt.Println(sub)
+
 		details, err := GetSubmissionDetails(sub.SubmissionId, token)
 		fmt.Println(err)
 		fmt.Println(details)
+
+		code, err := GetFileContents(sub.SourceCode)
+		fmt.Println(err)
+		fmt.Println(string(code))
+
 		fmt.Println()
 	}
 }

@@ -248,3 +248,27 @@ func GetSubmissionDetails(submissionId int, token AuthToken) (SubmissionDetails,
 
 	return parsedData, nil
 }
+
+// https://training.olinfo.it/api/files/dea3f7dd2d765bc837d4f6b4677ce3f5f6a0084f/intervalxor.cpp
+
+func GetFileUrl(file ApiFile) string {
+	return fmt.Sprintf("https://training.olinfo.it/api/files/%s/%s", file.HashDigest, file.Name)
+}
+
+func GetFileContents(file ApiFile) ([]byte, error) {
+	response, err := http.Get(GetFileUrl(file))
+	if err != nil {
+		return []byte{}, errors.New("GetFileContents(): The request caused an error")
+	}
+
+	if response.StatusCode != 200 {
+		return []byte{}, fmt.Errorf("GetFileContents(): The response had status code %d, instead of 200", response.StatusCode)
+	}
+
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		return []byte{}, fmt.Errorf("GetFileContents(): Error while trying to read the response body")
+	}
+
+	return data, nil
+}
