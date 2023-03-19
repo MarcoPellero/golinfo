@@ -10,8 +10,6 @@ import (
 
 type AuthToken = string
 
-const apiUrl = "https://training.olinfo.it/api"
-
 func Login(username, password string) (AuthToken, error) {
 	type payloadShape struct {
 		Username   string `json:"username"`
