@@ -37,8 +37,9 @@ func avgSubs(username, password string) float64 {
 	return float64(sum) / float64(len(profile.Scores))
 }
 
-func avgScorePerTask(username, password string) (float64, float64) {
-	// gets (avg number of subs per task, and per task)
+func avgScorePerSub(username, password string) float64 {
+	// gets avg score of subs per sub
+
 	token, err := Login(username, password)
 	if err != nil {
 		panic(err)
@@ -50,7 +51,7 @@ func avgScorePerTask(username, password string) (float64, float64) {
 	}
 
 	var sum uint64 = 0
-	subMeanResults := make(chan float64, len(profile.Scores))
+	results := make(chan float64, len(profile.Scores))
 
 	for _, task := range profile.Scores {
 		go func(task ProfileScore) {
@@ -64,25 +65,34 @@ func avgScorePerTask(username, password string) (float64, float64) {
 				scoreSum += x.Score
 			}
 
-			subMeanResults <- float64(scoreSum) / float64(len(info))
+			results <- float64(scoreSum) / float64(len(info))
 		}(task)
 	}
 
 	for range profile.Scores {
-		sum += uint64(<-subMeanResults)
+		sum += uint64(<-results)
 	}
-	subMean := float64(sum) / float64(len(profile.Scores))
 
-	sum = 0
-	for _, x := range profile.Scores {
-		sum += uint64(x.Score)
+	return float64(sum) / float64(len(profile.Scores))
+}
+
+func avgScorePerTask(username string) float64 {
+	// gets avg score per task
+
+	profile, err := GetProfile(username)
+	if err != nil {
+		panic(err)
 	}
-	taskMean := float64(sum) / float64(len(profile.Scores))
 
-	return subMean, taskMean
+	var sum uint64 = 0
+	for _, task := range profile.Scores {
+		sum += uint64(task.Score)
+	}
+
+	return float64(sum) / float64(len(profile.Scores))
 }
 
 func main() {
-	a, b := avgScorePerTask(os.Args[1], os.Args[2])
-	fmt.Println(a, b)
+	x := avgScorePerTask(os.Args[1])
+	fmt.Println(x)
 }
