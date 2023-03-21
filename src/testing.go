@@ -6,8 +6,7 @@ import (
 )
 
 func avgSubs(username, password string) float64 {
-	// same as above but concurrent
-
+	// gets avg number of subs per task
 	token, err := Login(username, password)
 	if err != nil {
 		panic(err)
