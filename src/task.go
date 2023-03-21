@@ -249,8 +249,6 @@ func GetSubmissionDetails(submissionId int, token AuthToken) (SubmissionDetails,
 	return parsedData, nil
 }
 
-// https://training.olinfo.it/api/files/dea3f7dd2d765bc837d4f6b4677ce3f5f6a0084f/intervalxor.cpp
-
 func GetFileUrl(file ApiFile) string {
 	return fmt.Sprintf("https://training.olinfo.it/api/files/%s/%s", file.HashDigest, file.Name)
 }
