@@ -165,18 +165,13 @@ func GetTaskSubmissions(taskName string, token AuthToken) ([]BasicSubmissionInfo
 
 	parsedData := make([]BasicSubmissionInfo, len(responseData.Submissions))
 	for i, apiSub := range responseData.Submissions {
-		unixSeconds := int64(math.Round(apiSub.Timestamp))
-		tmp := apiSub.Timestamp - float64(unixSeconds)
-		for tmp-math.Round(tmp) > 0 {
-			tmp *= 10
-		}
-		unixNanoseconds := int64(tmp)
+		unixSec, unixNanosec := math.Modf(apiSub.Timestamp)
 
 		parsedData[i] = BasicSubmissionInfo{
 			apiSub.Id,
 			apiSub.TaskId,
 			apiSub.Files[0],
-			time.Unix(unixSeconds, unixNanoseconds),
+			time.Unix(int64(unixSec), int64(unixNanosec*1e9)),
 			apiSub.CompilationOutcome == "ok",
 			apiSub.EvaluationOutcome == "ok",
 			int(apiSub.Score),
